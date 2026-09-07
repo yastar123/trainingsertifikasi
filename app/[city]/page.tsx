@@ -18,5 +18,5 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const { city: slug } = await params
   const city = cityBySlug.get(slug)
   if (!city) notFound()
-  return <Page city={city.name} />
+  return <Page city={city.name} citySlug={city.slug} />
 }

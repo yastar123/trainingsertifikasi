@@ -7,7 +7,14 @@ export function whatsappLink(message: string) {
 }
 
 export function slugify(value: string) {
-  return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' dan ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/^\s*(kota|kabupaten)\s+/i, '')
+    .toLowerCase()
+    .replace(/\s*&\s*/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
 }
 
 export function cityFromHost(host: string) {
