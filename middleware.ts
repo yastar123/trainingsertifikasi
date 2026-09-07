@@ -7,6 +7,14 @@ import { isThinCityArticle } from '@/data/articles/thin-page-rules'
 export function middleware(request: NextRequest) {
   const slug = cityFromHost(request.headers.get('host') ?? '')
   if (request.nextUrl.pathname.startsWith('/_next') || request.nextUrl.pathname.includes('.')) return NextResponse.next()
+
+  const canonicalArticleMatch = request.nextUrl.pathname.match(/^(?:\/([^/]+))?\/layanan\/artikel(?:\/([^/]+))?\/?$/)
+  if (canonicalArticleMatch) {
+    const canonicalUrl = request.nextUrl.clone()
+    canonicalUrl.pathname = `/layanan/artikel${canonicalArticleMatch[2] ? `/${canonicalArticleMatch[2]}` : ''}`
+    return NextResponse.rewrite(canonicalUrl)
+  }
+
   const articleIndexMatch = request.nextUrl.pathname.match(/^\/([^/]+)\/artikel\/?$/)
   if (articleIndexMatch && cityBySlug.has(articleIndexMatch[1])) return NextResponse.next()
 
