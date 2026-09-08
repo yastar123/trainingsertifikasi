@@ -13,6 +13,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(canonicalUrl)
   }
 
+  const articlePathMatch = request.nextUrl.pathname.match(/^\/([^/]+)\/artikel(\/[^/]*)?\/?$/)
+  if (slug && articlePathMatch && cityBySlug.has(slug) && articlePathMatch[1] !== slug) {
+    const canonicalUrl = request.nextUrl.clone()
+    canonicalUrl.pathname = `/${slug}/artikel${articlePathMatch[2] ?? ''}`
+    return NextResponse.redirect(canonicalUrl, 308)
+  }
+
   const articleIndexMatch = request.nextUrl.pathname.match(/^\/([^/]+)\/artikel\/?$/)
   if (articleIndexMatch && cityBySlug.has(articleIndexMatch[1])) return NextResponse.next()
 
