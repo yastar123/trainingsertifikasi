@@ -1,8 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { cities } from '../data/cities.ts'
 import { slugify } from '../lib/constants.ts'
-import { TIER1_CITY_SLUGS } from '../data/tier1-cities.ts'
-import { isThinCityArticle } from '../data/articles/thin-page-rules.ts'
+import { trainings } from '../data/trainings.ts'
 
 const DOMAIN = 'https://trainingsertifikasi.id'
 const LAST_MODIFIED = new Date().toISOString().slice(0, 10)
@@ -20,18 +19,20 @@ const entries = [
     changefreq: 'monthly',
     priority: '0.8',
   })),
-  ...['operator-lifter-manlift-boomlift-scissor-lift', 'operator-pallet-mover-liftstacker-reachstacker', 'operator-tower-crane', 'operator-overhead-crane-mobile-crane-pedestal-crane', 'operator-pita-transport-conveyor-kompressor', 'operator-gondola', 'operator-alat-berat-excavator-bulldozer-vibro-dump-truck-wheel-loader', 'operator-forklift', 'k3-listrik', 'smk3'].map((service) => ({
-    loc: `${DOMAIN}/layanan/artikel/${service}`,
-    lastmod: LAST_MODIFIED,
-    changefreq: 'monthly',
-    priority: '0.8',
-  })),
-  ...TIER1_CITY_SLUGS.flatMap((city) => ['operator-lifter-manlift-boomlift-scissor-lift', 'operator-pallet-mover-liftstacker-reachstacker', 'operator-tower-crane', 'operator-overhead-crane-mobile-crane-pedestal-crane', 'operator-pita-transport-conveyor-kompressor', 'operator-gondola', 'operator-alat-berat-excavator-bulldozer-vibro-dump-truck-wheel-loader', 'operator-forklift', 'k3-listrik', 'smk3'].filter((service) => !isThinCityArticle(city, service)).map((service) => ({
-    loc: `${DOMAIN}/${city}/artikel/${service}`,
-    lastmod: LAST_MODIFIED,
-    changefreq: 'monthly',
-    priority: '0.5',
-  }))),
+  ...cities.flatMap(({ slug: city }) => [
+    {
+      loc: `https://${city}.trainingsertifikasi.id/artikel`,
+      lastmod: LAST_MODIFIED,
+      changefreq: 'weekly',
+      priority: '0.8',
+    },
+    ...trainings.map((training) => ({
+      loc: `https://${city}.trainingsertifikasi.id/artikel/${slugify(training.name)}`,
+      lastmod: LAST_MODIFIED,
+      changefreq: 'monthly',
+      priority: '0.7',
+    })),
+  ]),
 ]
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>

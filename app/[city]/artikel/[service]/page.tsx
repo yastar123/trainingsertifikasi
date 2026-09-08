@@ -2,8 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowUpRight } from 'lucide-react'
+import type { City } from '@/data/cities'
 import { cityBySlug } from '@/data/cities'
-import { trainings } from '@/data/trainings'
+import { trainingForCity, trainings } from '@/data/trainings'
 import { k3ListrikArticles } from '@/data/articles/k3-listrik'
 import { smk3Articles } from '@/data/articles/smk3'
 import { canonicalServiceArticles } from '@/data/articles/canonical-services'
@@ -57,6 +58,21 @@ const canonicalServiceSlugs = Object.keys(canonicalServiceArticles)
 
 type ArticleSource = (typeof articleSources)[keyof typeof articleSources]
 
+function getFallbackArticle(service: (typeof trainings)[number], city: City) {
+  return {
+    intro: `${service.name} untuk ${city.name} membantu organisasi memenuhi kebutuhan kompetensi, keselamatan, kajian, atau kepatuhan sesuai karakter pekerjaan dan lokasi operasional.`,
+    sections: [
+      { title: 'Ruang lingkup layanan', paragraphs: [`Program ${service.name} disusun untuk kebutuhan perusahaan di ${city.name}, dengan pembahasan yang menyesuaikan kategori ${service.category.toLowerCase()}, profil peserta, risiko kerja, dan target organisasi.`, 'Pelaksanaan diawali dengan pemetaan kebutuhan, kondisi lapangan, persyaratan dokumen, serta koordinasi jadwal dan personel terkait.'] },
+      { title: 'Penerapan di tempat kerja', paragraphs: [`Materi atau pendampingan ${service.name} diarahkan agar dapat diterapkan pada proses kerja nyata di ${city.name}. Hasilnya dapat digunakan untuk memperkuat kompetensi, pengendalian risiko, dokumentasi, dan pengambilan keputusan.`, 'Ruang lingkup akhir dikonfirmasi berdasarkan jenis usaha, jumlah peserta, lokasi, peralatan, pola shift, dan kebutuhan kepatuhan perusahaan.'] },
+      { title: 'Konsultasi dan tindak lanjut', paragraphs: [`Tim dapat membantu membahas kebutuhan ${trainingForCity(service.name, city.name)}, pilihan jadwal, persiapan peserta, serta dokumen pendukung. Evaluasi tindak lanjut dilakukan agar rekomendasi atau kompetensi tidak berhenti pada kegiatan satu kali.`] },
+    ],
+    faq: [
+      { q: `Siapa yang membutuhkan ${service.name}?`, a: `Perusahaan dan personel yang memiliki kebutuhan terkait ${service.category.toLowerCase()} sesuai jenis pekerjaan dan risiko operasionalnya.` },
+      { q: `Apakah layanan tersedia di ${city.name}?`, a: `Kebutuhan lokasi, jadwal, peserta, dan ruang lingkup dapat dikonsultasikan untuk pelaksanaan di ${city.name} atau lokasi kerja yang ditentukan.` },
+    ],
+  }
+}
+
 function getArticle(citySlug: string, serviceSlug: string) {
   const city = cityBySlug.get(citySlug)
   const source = articleSources[serviceSlug as keyof typeof articleSources] as ArticleSource | undefined
@@ -73,7 +89,7 @@ function getCanonicalArticle(serviceSlug: string) {
 
 export function generateStaticParams() {
   return [
-    ...TIER1_CITY_SLUGS.flatMap((city) => Object.keys(articleSources).filter((service) => !isThinCityArticle(city, service)).map((service) => ({ city, service }))),
+    ...TIER1_CITY_SLUGS.flatMap((city) => trainings.map((service) => ({ city, service: slugify(service.name) }))),
     ...canonicalServiceSlugs.map((service) => ({ city: 'layanan', service })),
   ]
 }
@@ -109,9 +125,14 @@ export default async function ServiceArticlePage({ params }: { params: Promise<{
       </main>
     )
   }
-  const article = getArticle(citySlug, serviceSlug)
-  if (!article) notFound()
-  const { city, source, service, content } = article
+  let article = getArticle(citySlug, serviceSlug)
+  if (!article) {
+    const city = cityBySlug.get(citySlug)
+    const service = trainings.find((item) => slugify(item.name) === serviceSlug)
+    if (!city || !service) notFound()
+    article = { city, source: {} as ArticleSource, service, content: getFallbackArticle(service, city) }
+  }
+  const { city, service, content } = article
   const chatUrl = whatsappLink(`Halo, saya ingin konsultasi ${service.name} di ${city.name}.`)
 
   return (
@@ -125,5 +146,5 @@ export default async function ServiceArticlePage({ params }: { params: Promise<{
   )
 }
 
-export const dynamicParams = false
+export const dynamicParams = true
 export const revalidate = 86400

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { canonicalServiceArticles } from '@/data/articles/canonical-services'
+import { trainingForCity } from '@/data/trainings'
 import { cityBySlug, cities } from '@/data/cities'
 import { slugify } from '@/lib/constants'
 import { trainings } from '@/data/trainings'
@@ -21,9 +22,12 @@ export default async function ArticlesIndex({ params }: { params: Promise<{ city
   const city = cityBySlug.get(citySlug)
   if (!city) return null
 
-  const articles = Object.keys(canonicalServiceArticles)
-    .map((serviceSlug) => ({ serviceSlug, service: trainings.find((training) => slugify(training.name) === serviceSlug) }))
-    .filter((item): item is { serviceSlug: string; service: (typeof trainings)[number] } => Boolean(item.service))
+  const articles = trainings.map((service) => ({
+    service,
+    serviceSlug: slugify(service.name),
+    localizedName: trainingForCity(service.name, city.name),
+    hasCanonical: Boolean(canonicalServiceArticles[slugify(service.name)]),
+  }))
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -42,9 +46,9 @@ export default async function ArticlesIndex({ params }: { params: Promise<{ city
       </section>
       <section className="px-5 py-16 sm:px-8 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map(({ serviceSlug, service }) => (
+          {articles.map(({ serviceSlug, service, localizedName }) => (
             <Link key={serviceSlug} href={`/${city.slug}/artikel/${serviceSlug}`} className="group flex min-h-44 flex-col justify-between rounded-xl border border-border p-5 transition-colors hover:bg-secondary/50">
-              <div><p className="text-xs text-muted-foreground">Artikel layanan</p><h2 className="mt-4 text-lg font-medium leading-6">{service.name}</h2></div>
+              <div><p className="text-xs text-muted-foreground">Artikel layanan</p><h2 className="mt-4 text-lg font-medium leading-6">{localizedName}</h2></div>
               <span className="mt-8 inline-flex items-center gap-2 text-sm font-medium">Baca artikel <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
             </Link>
           ))}
