@@ -28,7 +28,7 @@ export default async function ArticlesIndex({ params, searchParams }: { params: 
   const articles = trainings.map((service) => ({
     service,
     serviceSlug: slugify(service.name),
-    localizedName: trainingForCity(service.name, locationName),
+    localizedName: `Training ${trainingForCity(service.name, locationName)}`,
     hasCanonical: Boolean(canonicalServiceArticles[slugify(service.name)]),
   }))
 

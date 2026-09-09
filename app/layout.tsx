@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { FloatingWhatsApp } from '@/components/floating-whatsapp'
 
 export const metadata: Metadata = {
   title: 'Pelatihan & Sertifikasi K3 di Bandung | Training Sertifikasi',
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="id" className="bg-background">
       <body className="antialiased">
         {children}
+        <FloatingWhatsApp />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
