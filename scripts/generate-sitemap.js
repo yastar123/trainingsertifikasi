@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { cities } from '../data/cities.ts'
 import { slugify } from '../lib/constants.ts'
 import { trainings } from '../data/trainings.ts'
+import { districtsForCity, districtSlug } from '../data/districts.ts'
 
 const DOMAIN = 'https://trainingsertifikasi.id'
 const LAST_MODIFIED = new Date().toISOString().slice(0, 10)
@@ -32,6 +33,12 @@ const entries = [
       changefreq: 'monthly',
       priority: '0.7',
     })),
+    ...districtsForCity(city, cities.find((item) => item.slug === city)?.name ?? city).flatMap((district) => trainings.map((training) => ({
+      loc: `https://${districtSlug(district)}.${city}.trainingsertifikasi.id/artikel/${slugify(training.name)}`,
+      lastmod: LAST_MODIFIED,
+      changefreq: 'monthly',
+      priority: '0.5',
+    }))),
   ]),
 ]
 

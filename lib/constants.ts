@@ -21,5 +21,12 @@ export function cityFromHost(host: string) {
   const hostname = host.split(':')[0].toLowerCase()
   if (!hostname.endsWith('trainingsertifikasi.id')) return null
   const subdomain = hostname.replace('.trainingsertifikasi.id', '')
-  return subdomain && subdomain !== 'www' ? subdomain : null
+  return subdomain && subdomain !== 'www' ? subdomain.split('.').at(-1) ?? null : null
+}
+
+export function districtFromHost(host: string) {
+  const hostname = host.split(':')[0].toLowerCase()
+  if (!hostname.endsWith('trainingsertifikasi.id')) return null
+  const labels = hostname.replace('.trainingsertifikasi.id', '').split('.')
+  return labels.length === 2 ? labels[0] : null
 }

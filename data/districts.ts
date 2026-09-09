@@ -11,6 +11,14 @@ export function districtsForCity(citySlug: string, cityName: string): District[]
   return names.map((name) => ({ name: `Kecamatan ${name}`, city: cityName }))
 }
 
+export function districtSlug(district: District) {
+  return district.name.replace(/^Kecamatan\s+/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+}
+
+export function districtSubdomainUrl(district: District, citySlug: string, serviceSlug: string) {
+  return `https://${districtSlug(district)}.${citySlug}.trainingsertifikasi.id/artikel/${serviceSlug}`
+}
+
 export function districtMapsUrl(district: District) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${district.name}, ${district.city}`)}`
 }

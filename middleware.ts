@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cityBySlug } from '@/data/cities'
-import { cityFromHost } from '@/lib/constants'
+import { cityFromHost, districtFromHost, slugify } from '@/lib/constants'
+import { districtsForCity } from '@/data/districts'
 
 export function middleware(request: NextRequest) {
-  const slug = cityFromHost(request.headers.get('host') ?? '')
+  const host = request.headers.get('host') ?? ''
+  const slug = cityFromHost(host)
+  const districtSlug = districtFromHost(host)
   if (request.nextUrl.pathname.startsWith('/_next') || request.nextUrl.pathname.includes('.')) return NextResponse.next()
+
+  if (districtSlug && slug && cityBySlug.has(slug)) {
+    const districtExists = districtsForCity(slug, cityBySlug.get(slug)?.name ?? slug).some((district) => slugify(district.name) === districtSlug)
+    if (districtExists) {
+      const districtPath = request.nextUrl.pathname.match(/^\/artikel(\/[^/]*)?\/?$/)
+      if (districtPath) {
+        const districtUrl = request.nextUrl.clone()
+        districtUrl.pathname = `/${slug}/artikel${districtPath[1] ?? ''}`
+        return NextResponse.rewrite(districtUrl)
+      }
+    }
+  }
 
   const canonicalArticleMatch = request.nextUrl.pathname.match(/^(?:\/([^/]+))?\/layanan\/artikel(?:\/([^/]+))?\/?$/)
   if (canonicalArticleMatch) {
