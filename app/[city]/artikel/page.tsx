@@ -17,15 +17,18 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   return { title: city ? `Artikel K3 di ${city.name}` : 'Artikel K3' }
 }
 
-export default async function ArticlesIndex({ params }: { params: Promise<{ city: string }> }) {
+export default async function ArticlesIndex({ params, searchParams }: { params: Promise<{ city: string }>; searchParams: Promise<{ district?: string }> }) {
   const { city: citySlug } = await params
+  const { district } = await searchParams
   const city = cityBySlug.get(citySlug)
   if (!city) return null
+  const districtName = district ? district.replace(/-/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : undefined
+  const locationName = districtName ? `${districtName}, ${city.name}` : city.name
 
   const articles = trainings.map((service) => ({
     service,
     serviceSlug: slugify(service.name),
-    localizedName: trainingForCity(service.name, city.name),
+    localizedName: trainingForCity(service.name, locationName),
     hasCanonical: Boolean(canonicalServiceArticles[slugify(service.name)]),
   }))
 
@@ -33,21 +36,21 @@ export default async function ArticlesIndex({ params }: { params: Promise<{ city
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border px-5 py-5 sm:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <Link href={`/${city.slug}`} className="font-semibold">Training Sertifikasi</Link>
-          <Link href={`/${city.slug}`} className="text-sm text-muted-foreground hover:text-foreground">Kembali ke beranda</Link>
+          <Link href={district ? `https://${district}.${city.slug}.trainingsertifikasi.id/` : `/${city.slug}`} className="font-semibold">Training Sertifikasi</Link>
+          <Link href={district ? `https://${district}.${city.slug}.trainingsertifikasi.id/` : `/${city.slug}`} className="text-sm text-muted-foreground hover:text-foreground">Kembali ke beranda</Link>
         </div>
       </header>
       <section className="border-b border-border px-5 py-20 sm:px-8 sm:py-28">
         <div className="mx-auto max-w-7xl">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Pusat artikel</p>
-          <h1 className="max-w-3xl text-balance text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">Panduan K3 untuk {city.name}.</h1>
+          <h1 className="max-w-3xl text-balance text-5xl font-semibold tracking-[-0.06em] sm:text-6xl">Panduan K3 untuk {locationName}.</h1>
           <p className="mt-6 max-w-2xl text-pretty leading-7 text-muted-foreground">Baca panduan praktis tentang kompetensi, keselamatan kerja, dan penerapan pelatihan K3 berdasarkan layanan yang Anda butuhkan.</p>
         </div>
       </section>
       <section className="px-5 py-16 sm:px-8 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {articles.map(({ serviceSlug, service, localizedName }) => (
-            <Link key={serviceSlug} href={`/${city.slug}/artikel/${serviceSlug}`} className="group flex min-h-44 flex-col justify-between rounded-xl border border-border p-5 transition-colors hover:bg-secondary/50">
+            <Link key={serviceSlug} href={district ? `https://${district}.${city.slug}.trainingsertifikasi.id/artikel/${serviceSlug}` : `/${city.slug}/artikel/${serviceSlug}`} className="group flex min-h-44 flex-col justify-between rounded-xl border border-border p-5 transition-colors hover:bg-secondary/50">
               <div><p className="text-xs text-muted-foreground">Artikel layanan</p><h2 className="mt-4 text-lg font-medium leading-6">{localizedName}</h2></div>
               <span className="mt-8 inline-flex items-center gap-2 text-sm font-medium">Baca artikel <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
             </Link>

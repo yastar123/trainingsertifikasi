@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   if (districtSlug && slug && cityBySlug.has(slug)) {
     const districtExists = districtsForCity(slug, cityBySlug.get(slug)?.name ?? slug).some((district) => slugify(district.name).replace(/^kecamatan-/, '') === districtSlug)
     if (districtExists) {
-      const districtPath = request.nextUrl.pathname.match(/^\/artikel(\/[^/]*)?\/?$/)
+      const districtPath = request.nextUrl.pathname.match(/^(?:\/[^/]+)?\/artikel(\/[^/]*)?\/?$/)
       const districtUrl = request.nextUrl.clone()
       districtUrl.pathname = districtPath ? `/${slug}/artikel${districtPath[1] ?? ''}` : `/${slug}`
       districtUrl.searchParams.set('district', districtSlug)
