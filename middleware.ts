@@ -10,14 +10,13 @@ export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/_next') || request.nextUrl.pathname.includes('.')) return NextResponse.next()
 
   if (districtSlug && slug && cityBySlug.has(slug)) {
-    const districtExists = districtsForCity(slug, cityBySlug.get(slug)?.name ?? slug).some((district) => slugify(district.name) === districtSlug)
+    const districtExists = districtsForCity(slug, cityBySlug.get(slug)?.name ?? slug).some((district) => slugify(district.name).replace(/^kecamatan-/, '') === districtSlug)
     if (districtExists) {
       const districtPath = request.nextUrl.pathname.match(/^\/artikel(\/[^/]*)?\/?$/)
-      if (districtPath) {
-        const districtUrl = request.nextUrl.clone()
-        districtUrl.pathname = `/${slug}/artikel${districtPath[1] ?? ''}`
-        return NextResponse.rewrite(districtUrl)
-      }
+      const districtUrl = request.nextUrl.clone()
+      districtUrl.pathname = districtPath ? `/${slug}/artikel${districtPath[1] ?? ''}` : `/${slug}`
+      districtUrl.searchParams.set('district', districtSlug)
+      return NextResponse.rewrite(districtUrl)
     }
   }
 
