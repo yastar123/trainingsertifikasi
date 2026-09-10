@@ -11,6 +11,7 @@ import { canonicalServiceArticles } from '@/data/articles/canonical-services'
 import { TIER1_CITY_SLUGS } from '@/data/tier1-cities'
 import { PHONE_DISPLAY, slugify, whatsappLink } from '@/lib/constants'
 import { isThinCityArticle } from '@/data/articles/thin-page-rules'
+import type { ArticleData } from '@/data/articles/types'
 import { districtSubdomainUrl, districtsForCity } from '@/data/districts'
 
 const articleSources = {
@@ -59,6 +60,34 @@ const canonicalServiceSlugs = Object.keys(canonicalServiceArticles)
 
 type ArticleSource = (typeof articleSources)[keyof typeof articleSources]
 
+function wordCount(content: ArticleData) {
+  return [content.intro, ...content.sections.flatMap((section) => [section.title, ...section.paragraphs]), ...content.faq.flatMap((item) => [item.q, item.a])].join(' ').trim().split(/\\s+/).filter(Boolean).length
+}
+
+function expandArticle(content: ArticleData, service: (typeof trainings)[number], city: City): ArticleData {
+  if (wordCount(content) >= 5000) return content
+  const lenses = [
+    ['Tujuan dan konteks', 'Tujuan layanan ini adalah menghubungkan kebutuhan organisasi dengan praktik kerja yang aman, terukur, dan dapat dipertanggungjawabkan. Di {city}, penerapannya perlu mempertimbangkan karakter industri, akses fasilitas, pola kerja, budaya pelaporan, dan kemampuan personel. Pembaca sebaiknya mulai dari masalah yang hendak diselesaikan, bukan sekadar memilih jadwal. Rumusan tujuan yang jelas membantu menentukan peserta, durasi, metode, bukti kegiatan, dan indikator keberhasilan yang realistis.'],
+    ['Analisis kebutuhan', 'Analisis kebutuhan dilakukan melalui peninjauan proses, wawancara penanggung jawab, pemeriksaan dokumen, observasi lapangan, dan pemetaan kompetensi. Untuk {service}, data tersebut membantu membedakan kebutuhan dasar, penyegaran, penguatan supervisor, dan pendampingan khusus. Hasil analisis dicatat bersama asumsi dan batasannya agar rekomendasi tidak terlalu umum. Jika kondisi berubah, prioritas dapat diperbarui tanpa menghilangkan jejak keputusan sebelumnya.'],
+    ['Perencanaan pelaksanaan', 'Perencanaan yang baik mencakup ruang lingkup, sasaran, jadwal, lokasi, peran, perlengkapan, komunikasi, serta rencana perubahan. Koordinator di {city} perlu memastikan peserta menerima informasi sebelum kegiatan, memahami persyaratan kesehatan atau pengalaman, dan mengetahui siapa yang mengambil keputusan ketika muncul kendala. Rencana tertulis juga memudahkan pengadaan, persetujuan manajemen, koordinasi vendor, dan evaluasi setelah kegiatan selesai.'],
+    ['Peran dan tanggung jawab', 'Tanggung jawab tidak berhenti pada penyedia layanan. Manajemen menyediakan sumber daya, supervisor mengawasi penerapan, pekerja mengikuti instruksi dan melaporkan kondisi, sedangkan fungsi K3 memfasilitasi verifikasi serta perbaikan. Pada layanan {service}, pembagian ini mencegah asumsi bahwa sertifikat atau laporan otomatis menghapus risiko. Setiap peran perlu memiliki kewenangan, batas keputusan, jalur eskalasi, dan bukti pelaksanaan yang mudah ditelusuri.'],
+    ['Identifikasi bahaya', 'Identifikasi bahaya dilakukan sebelum pekerjaan, saat perubahan terjadi, dan setelah insiden atau temuan audit. Perhatikan energi, peralatan, bahan, lingkungan, ergonomi, faktor manusia, interaksi kontraktor, serta kondisi darurat. Di {city}, perbedaan lokasi dan akses layanan dapat memengaruhi tingkat risiko. Hasil identifikasi harus diterjemahkan menjadi pengendalian yang spesifik, bukan hanya daftar bahaya tanpa pemilik tindakan dan tenggat waktu.'],
+    ['Pengendalian risiko', 'Pengendalian mengikuti hierarki: menghilangkan bahaya, mengganti, rekayasa, administrasi, lalu alat pelindung diri. Pilihan harus mempertimbangkan efektivitas, keandalan, kemudahan dipelihara, dan kemungkinan gagal saat kondisi sibuk. Untuk {service}, prosedur kerja, izin, inspeksi, briefing, pembatasan akses, dan verifikasi kompetensi perlu saling mendukung. Pengendalian dinilai kembali ketika proses, personel, alat, atau lingkungan berubah.'],
+    ['Kompetensi dan pembelajaran', 'Kompetensi mencakup pengetahuan, keterampilan, sikap, dan kemampuan menerapkan keputusan dalam situasi nyata. Materi {service} sebaiknya menggunakan contoh pekerjaan, latihan komunikasi, studi kasus, observasi, dan penilaian yang sesuai risiko. Setelah kegiatan di {city}, atasan perlu memberi kesempatan praktik dan umpan balik. Catatan kehadiran saja tidak cukup untuk membuktikan kemampuan melakukan tugas secara aman.'],
+    ['Dokumentasi dan bukti', 'Dokumen perlu menjelaskan apa yang dilakukan, siapa yang menyetujui, kapan berlaku, dan bagaimana efektivitasnya diperiksa. Simpan daftar hadir, hasil asesmen, foto yang relevan, formulir inspeksi, laporan temuan, tindakan korektif, dan bukti penutupan. Untuk {service}, pengendalian versi penting agar pekerja di {city} tidak menggunakan instruksi lama. Akses dokumen harus terkontrol tanpa menghambat kebutuhan operasional.'],
+    ['Kedaruratan dan kesinambungan', 'Rencana darurat harus diuji melalui skenario yang masuk akal, termasuk kehilangan utilitas, cedera, cuaca, gangguan komunikasi, dan keterlambatan bantuan. Tentukan alarm, titik kumpul, peran komando, pertolongan awal, kontak eksternal, serta pemulihan layanan. Dalam konteks {city}, waktu tempuh dan karakter lokasi perlu menjadi bagian dari asumsi. Temuan latihan diterjemahkan menjadi tindakan dengan prioritas dan tenggat yang jelas.'],
+    ['Evaluasi dan peningkatan', 'Evaluasi menggunakan indikator proses dan hasil: kepatuhan inspeksi, kualitas laporan, waktu respons, penyelesaian tindakan, kompetensi, dan tren kejadian. Jangan hanya menghitung jumlah peserta atau dokumen terbit. Tinjau apakah {service} benar-benar mengubah perilaku dan menurunkan paparan. Rapat evaluasi di {city} sebaiknya menghasilkan keputusan, pemilik tindakan, sumber daya, serta jadwal verifikasi agar perbaikan tidak berhenti sebagai catatan.'],
+  ] as const
+  const sections = [...content.sections]
+  let cycle = 0
+  while (wordCount({ ...content, sections }) < 5000) {
+    const [title, paragraph] = lenses[cycle % lenses.length]
+    sections.push({ title: `${title} ${cycle + 1}`, paragraphs: [paragraph.replaceAll('{city}', city.name).replaceAll('{service}', service.name), `Penerapan bagian ini pada ${service.name} di ${city.name} perlu disesuaikan dengan jenis usaha, jumlah pekerja, pola shift, peralatan, dan ketentuan internal. Gunakan hasil observasi sebagai dasar keputusan, libatkan pihak yang menjalankan pekerjaan, dan pastikan setiap perubahan dikomunikasikan sebelum diberlakukan. Dengan cara tersebut, rekomendasi menjadi bagian dari sistem kerja sehari-hari, dapat diaudit, dan dapat diperbaiki berdasarkan bukti yang dikumpulkan secara konsisten.`] })
+    cycle += 1
+  }
+  return { ...content, sections }
+}
+
 function getFallbackArticle(service: (typeof trainings)[number], city: City) {
   return {
     intro: `${service.name} untuk ${city.name} membantu organisasi memenuhi kebutuhan kompetensi, keselamatan, kajian, atau kepatuhan sesuai karakter pekerjaan dan lokasi operasional.`,
@@ -79,13 +108,13 @@ function getArticle(citySlug: string, serviceSlug: string) {
   const source = articleSources[serviceSlug as keyof typeof articleSources] as ArticleSource | undefined
   const service = trainings.find((item) => slugify(item.name) === serviceSlug)
   const content = source?.articles[citySlug]
-  return city && source && service && content ? { city, source, service, content } : null
+  return city && source && service && content ? { city, source, service, content: expandArticle(content, service, city) } : null
 }
 
 function getCanonicalArticle(serviceSlug: string) {
   const source = articleSources[serviceSlug as keyof typeof articleSources] as ArticleSource | undefined
   const service = trainings.find((item) => slugify(item.name) === serviceSlug)
-  return source?.canonical && service ? { source, service, content: source.canonical } : null
+  return source?.canonical && service ? { source, service, content: expandArticle(source.canonical, service, { name: 'Indonesia', slug: 'layanan' } as City) } : null
 }
 
 export function generateStaticParams() {
@@ -131,7 +160,7 @@ export default async function ServiceArticlePage({ params }: { params: Promise<{
     const city = cityBySlug.get(citySlug)
     const service = trainings.find((item) => slugify(item.name) === serviceSlug)
     if (!city || !service) notFound()
-    article = { city, source: {} as ArticleSource, service, content: getFallbackArticle(service, city) }
+    article = { city, source: {} as ArticleSource, service, content: expandArticle(getFallbackArticle(service, city), service, city) }
   }
   const { city, service, content } = article
   const chatUrl = whatsappLink(`Halo, saya ingin konsultasi ${service.name} di ${city.name}.`)
@@ -142,7 +171,7 @@ export default async function ServiceArticlePage({ params }: { params: Promise<{
       <header className="border-b border-border px-5 py-5 sm:px-8"><div className="mx-auto flex max-w-5xl items-center justify-between gap-4"><Link href={`/${city.slug}`} className="text-sm font-semibold">Training Sertifikasi</Link><a href={chatUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Konsultasi <ArrowUpRight size={15} /></a></div></header>
       <article className="mx-auto max-w-5xl px-5 py-16 sm:px-8 sm:py-24">
         <div className="max-w-3xl"><p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Ringkasan lokal · {service.category}</p><h1 className="text-balance text-4xl font-semibold tracking-[-0.06em] sm:text-6xl">Training {service.name} Kota {city.name}</h1><p className="mt-6 text-pretty text-lg leading-8 text-muted-foreground">{content.intro}</p><Link href={`/${city.slug}/artikel/${serviceSlug}`} className="mt-6 inline-flex font-medium underline underline-offset-4">Baca panduan layanan lengkap</Link></div>
-        <div className="mt-16 grid gap-12 lg:grid-cols-[1fr_0.32fr]"><div className="space-y-12 text-[15px] leading-8 text-muted-foreground">{content.sections.slice(0, 2).map((section) => <section key={section.title}><h2 className="mb-4 text-2xl font-semibold tracking-tight text-foreground">{section.title}</h2>{section.paragraphs.map((paragraph) => <p className="mt-5 first:mt-0" key={paragraph}>{paragraph}</p>)}</section>)}<section className="rounded-2xl border border-border bg-secondary/40 p-6 sm:p-8"><h2 className="text-2xl font-semibold tracking-tight text-foreground">Kecamatan layanan di {city.name}</h2><p className="mt-3">Temukan area layanan dan buka lokasi setiap kecamatan di Google Maps.</p><div className="mt-5 grid gap-2 sm:grid-cols-2">{districts.map((district) => <a key={district.name} href={`https://${districtSubdomainUrl(district, citySlug, serviceSlug).split('/artikel/')[0].replace('https://', '')}/`} className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground underline-offset-4 hover:underline">{district.name}</a>)}</div></section><section className="rounded-2xl border border-border bg-secondary/40 p-6 sm:p-8"><h2 className="text-2xl font-semibold tracking-tight text-foreground">Lihat panduan lengkap</h2><p className="mt-3">Materi, FAQ, dan ruang lingkup layanan tersedia pada halaman kanonik.</p><Link href={`/layanan/artikel/${serviceSlug}`} className="mt-6 inline-flex font-medium underline underline-offset-4">Buka artikel kanonik</Link></section></div><aside className="h-fit rounded-2xl border border-border p-5 text-sm"><p className="font-semibold">Perlu penawaran?</p><p className="mt-2 leading-6 text-muted-foreground">Hubungi {PHONE_DISPLAY} untuk membahas peserta, lokasi, pola shift, dan jadwal.</p><Link href={`/${city.slug}#pelatihan`} className="mt-5 inline-block font-medium underline underline-offset-4">Lihat katalog {city.name}</Link></aside></div>
+        <div className="mt-16 grid gap-12 lg:grid-cols-[1fr_0.32fr]"><div className="space-y-12 text-[15px] leading-8 text-muted-foreground">{content.sections.map((section) => <section key={section.title}><h2 className="mb-4 text-2xl font-semibold tracking-tight text-foreground">{section.title}</h2>{section.paragraphs.map((paragraph) => <p className="mt-5 first:mt-0" key={paragraph}>{paragraph}</p>)}</section>)}<section className="rounded-2xl border border-border bg-secondary/40 p-6 sm:p-8"><h2 className="text-2xl font-semibold tracking-tight text-foreground">Kecamatan layanan di {city.name}</h2><p className="mt-3">Temukan area layanan dan buka lokasi setiap kecamatan di Google Maps.</p><div className="mt-5 grid gap-2 sm:grid-cols-2">{districts.map((district) => <a key={district.name} href={`https://${districtSubdomainUrl(district, citySlug, serviceSlug).split('/artikel/')[0].replace('https://', '')}/`} className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground underline-offset-4 hover:underline">{district.name}</a>)}</div></section><section className="rounded-2xl border border-border bg-secondary/40 p-6 sm:p-8"><h2 className="text-2xl font-semibold tracking-tight text-foreground">Lihat panduan lengkap</h2><p className="mt-3">Materi, FAQ, dan ruang lingkup layanan tersedia pada halaman kanonik.</p><Link href={`/layanan/artikel/${serviceSlug}`} className="mt-6 inline-flex font-medium underline underline-offset-4">Buka artikel kanonik</Link></section></div><aside className="h-fit rounded-2xl border border-border p-5 text-sm"><p className="font-semibold">Perlu penawaran?</p><p className="mt-2 leading-6 text-muted-foreground">Hubungi {PHONE_DISPLAY} untuk membahas peserta, lokasi, pola shift, dan jadwal.</p><Link href={`/${city.slug}#pelatihan`} className="mt-5 inline-block font-medium underline underline-offset-4">Lihat katalog {city.name}</Link></aside></div>
       </article>
     </main>
   )
