@@ -114,7 +114,10 @@ function getArticle(citySlug: string, serviceSlug: string) {
 function getCanonicalArticle(serviceSlug: string) {
   const source = articleSources[serviceSlug as keyof typeof articleSources] as ArticleSource | undefined
   const service = trainings.find((item) => slugify(item.name) === serviceSlug)
-  return source?.canonical && service ? { source, service, content: expandArticle(source.canonical, service, { name: 'Indonesia', slug: 'layanan' } as City) } : null
+  if (!service) return null
+  const city = { name: 'Indonesia', slug: 'layanan' } as City
+  const content = source?.canonical ?? getFallbackArticle(service, city)
+  return { source: source ?? ({} as ArticleSource), service, content: expandArticle(content, service, city) }
 }
 
 export function generateStaticParams() {
