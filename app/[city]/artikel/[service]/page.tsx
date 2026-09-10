@@ -61,7 +61,7 @@ const canonicalServiceSlugs = Object.keys(canonicalServiceArticles)
 type ArticleSource = (typeof articleSources)[keyof typeof articleSources]
 
 function wordCount(content: ArticleData) {
-  return [content.intro, ...content.sections.flatMap((section) => [section.title, ...section.paragraphs]), ...content.faq.flatMap((item) => [item.q, item.a])].join(' ').trim().split(/\\s+/).filter(Boolean).length
+  return [content.intro, ...content.sections.flatMap((section) => [section.title, ...section.paragraphs]), ...content.faq.flatMap((item) => [item.q, item.a])].join(' ').trim().split(/\s+/).filter(Boolean).length
 }
 
 function expandArticle(content: ArticleData, service: (typeof trainings)[number], city: City): ArticleData {
